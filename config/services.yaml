@@ -1,0 +1,66 @@
+# This file is the entry point to configure your own services.
+# Files in the packages/ subdirectory configure your dependencies.
+
+# Put parameters here that don't need to change on each machine where the app is deployed
+# https://symfony.com/doc/current/best_practices/configuration.html#application-related-configuration
+parameters:
+    locale: 'en'
+    hello_message: 'Hello from service'
+    email_from: '%env(MAILER_FROM)%'
+
+services:
+    # default configuration for services in *this* file
+    _defaults:
+        autowire: true      # Automatically injects dependencies in your services.
+        autoconfigure: true # Automatically registers your services as commands, event subscribers, etc.
+
+        bind:
+            $locale: '%locale%'
+            $hello_message: '%hello_message%'
+
+    # makes classes in src/ available to be used as services
+    # this creates a service per class whose id is the fully-qualified class name
+    App\:
+        resource: '../src/*'
+        exclude: '../src/{DependencyInjection,Entity,Migrations,Tests,Kernel.php}'
+
+    # controllers are imported separately to make sure services can be injected
+    # as action arguments even if you don't extend any base controller class
+    App\Controller\:
+        resource: '../src/Controller'
+        tags: ['controller.service_arguments']
+
+    App\Mailer\Mailer:
+        arguments:
+            $mailFrom: '%email_from%'
+
+    app.greeting:
+        public: true
+        alias: App\Service\Greeting
+
+    App\Eventlistener\LikeNotificationSubscriber:
+        tags:
+            - { name: doctrine.event_subscriber, connection: default}
+
+    Symfony\Component\HttpFoundation\Session\Storage\Handler\PdoSessionHandler:
+        arguments:
+            - 'mysql:dbname=symfony; host=db; port=3306'
+            - { db_username: symfony, db_password: symfony }
+
+
+            # - !service { class: PDO, factory: 'database_connection:getWrappedConnection' }
+            # If you get transaction issues (e.g. after login) uncomment the line below
+            # - { lock_mode: 1 }
+
+    App\Event\UserSubscriber:
+        arguments:
+            $defaultLocale: '%kernel.default_locale%'
+
+    App\Event\LocaleSubscriber:
+        arguments:
+            - ['%kernel.default_locale%']
+
+
+
+    # add more service definitions when explicit configuration is needed
+    # please note that last definitions always *replace* previous ones
