@@ -13,7 +13,6 @@ use Symfony\Component\Form\FormFactoryInterface;
 use Symfony\Component\HttpFoundation\RedirectResponse;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Session\Flash\FlashBagInterface;
-use Symfony\Component\HttpKernel\Exception\UnauthorizedHttpException;
 use Symfony\Component\Routing\Annotation\Route;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Routing\RouterInterface;
@@ -103,8 +102,8 @@ class MicroPostController
      */
     public function edit(MicroPost $microPost,Request $request)
     {
-        if($this->authorizationChecker->isGranted('edit', $microPost)){
-            throw new UnauthorizedHttpException();
+        if(!$this->authorizationChecker->isGranted('edit', $microPost)){
+            throw new \Exception('bruh');
         }
         $form = $this->formFactory->create(MicroPostType::class, $microPost);
 
@@ -139,7 +138,7 @@ class MicroPostController
         $request->getSession()->getFlashBag()->add('notice', 'Post was deleted!');
 
         return new RedirectResponse(
-            $this->router->generate('micro_post_index')
+            $this->router->generate('micro_post_user')
         );
     }
 

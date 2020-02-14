@@ -37,12 +37,14 @@
                     </a>
                 </li>
                 <li class="nav-item text-nowrap">
-                    <a class="nav-link"
-                       href="#">{{ app.user.fullName }}</a>
+                    <a class="nav-link" href="{{ path('micro_post_user', { 'username': app.user.username }) }}">
+                        {{ app.user.fullName }}
+                    </a>
                 </li>
                 <li class="nav-item text-nowrap">
-                    <a class="nav-link"
-                       href="{{ path('security_logout') }}">{{'Sign out'|trans}}</a>
+                    <a class="nav-link" href="{{ path('security_logout') }}">
+                        {{'Sign out'|trans}}
+                    </a>
                 </li>
             {% else %}
                 <li class="nav-item text-nowrap">
