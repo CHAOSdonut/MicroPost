@@ -11,7 +11,7 @@
         <p>You currently do not follow anyone, you might find these users interesting: </p>
 
         {% for userToFollow in usersToFollow %}
-            <a href="{{ path('following_follow', {'id': userToFollow.id}) }}">
+            <a href="{{ path('micro_post_user', {'username': userToFollow.username}) }}">
                 @{{ userToFollow.username }},</a>
         {% endfor %}
 

@@ -6,6 +6,7 @@ use App\Entity\UserPreferences;
 use Doctrine\ORM\EntityManager;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Component\EventDispatcher\EventSubscriberInterface;
+use App\Mailer\Mailer;
 
 class UserSubscriber implements EventSubscriberInterface
 {
@@ -18,11 +19,17 @@ class UserSubscriber implements EventSubscriberInterface
      */
     private $defaultLocale;
 
-    public function __construct(\Swift_Mailer $mailer, EntityManagerInterface $entityManager, string $defaultLocale)
+    /**
+     * @var Mailer2
+     */
+    private $mailer2;
+
+    public function __construct(\Swift_Mailer $mailer, EntityManagerInterface $entityManager, string $defaultLocale, Mailer $mailer2)
     {
         $this->mailer = $mailer;
         $this->entityManager = $entityManager;
         $this->defaultLocale = $defaultLocale;
+        $this->mailer2 = $mailer2;
     }
 
     public static function getSubscribedEvents()
@@ -41,7 +48,6 @@ class UserSubscriber implements EventSubscriberInterface
         $user->setPreferences($preferences);
 
         $this->entityManager->flush();
-
-        $this->mailer->sendConfirmationEmail($event->getRegisteredUser());
+        $this->mailer2->sendConfirmationEmail($event->getRegisteredUser());
     }
 }

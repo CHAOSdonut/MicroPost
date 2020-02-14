@@ -27,7 +27,7 @@ class Mailer
         $this->mailFrom = $mailFrom;
     }
 
-    public function sendConfirmationEmail(User $user, UserRegisterEvent $event, string $mailFrom)
+    public function sendConfirmationEmail(User $user)
     {
         $body = $this->twig->render('email/registration.html.twig', [
             'user' => $user,
