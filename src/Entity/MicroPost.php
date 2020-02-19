@@ -4,8 +4,6 @@ namespace App\Entity;
 
 use Doctrine\Common\Collections\ArrayCollection;
 use Doctrine\ORM\Mapping as ORM;
-use Doctrine\ORM\PersistentCollection;
-use phpDocumentor\Reflection\Types\Void_;
 
 /**
  * @ORM\Entity(repositoryClass="App\Repository\MicroPostRepository")
@@ -91,7 +89,9 @@ class MicroPost
      * @ORM\PrePersist()
      */
     public function setTimeOnPersist(): Void {
-        $this->time = new \DateTime();
+        if ($this->time === null) {
+            $this->time = new \DateTime();
+        }
     }
 
     /**
@@ -110,10 +110,8 @@ class MicroPost
         $this->user = $user;
     }
 
-    /**
-     * @return PersistentCollection
-     */
-    public function getLikedBy(): PersistentCollection
+
+    public function getLikedBy()
     {
         return $this->likedBy;
     }
@@ -125,5 +123,15 @@ class MicroPost
         }
 
         $this->likedBy->add($user);
+    }
+
+    public function addLikedby(User $user)
+    {
+        $this->likedBy->add($user);
+    }
+
+    public function removeLikedby(User $user)
+    {
+        $this->likedBy->remove($user);
     }
 }

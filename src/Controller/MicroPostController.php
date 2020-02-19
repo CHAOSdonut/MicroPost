@@ -18,6 +18,7 @@ use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Routing\RouterInterface;
 use Symfony\Component\Security\Core\Authentication\Token\Storage\TokenStorageInterface;
 use Symfony\Component\Security\Core\Authorization\AuthorizationCheckerInterface;
+use Symfony\Component\Security\Core\User\UserInterface;
 
 /**
  * @Route("/micro-post")
@@ -130,7 +131,7 @@ class MicroPostController
      * @Route("/delete/{id}", name="micro_post_delete")
      * @Security("is_granted('delete', microPost)", message="Access denied")
      */
-    public function delete(MicroPost $microPost, Request $request)
+    public function delete(MicroPost $microPost, Request $request, UserInterface $user)
     {
         $this->entityManager->remove($microPost);
         $this->entityManager->flush();
@@ -138,7 +139,7 @@ class MicroPostController
         $request->getSession()->getFlashBag()->add('notice', 'Post was deleted!');
 
         return new RedirectResponse(
-            $this->router->generate('micro_post_user')
+            $this->router->generate('micro_post_user', ['username' => $user->getUsername()])
         );
     }
 
@@ -148,7 +149,7 @@ class MicroPostController
      */
     public function add(Request $request, TokenStorageInterface $tokenStorage)
     {
-        $user = $tokenStorage->getToken()->getUser();;
+        $user = $tokenStorage->getToken()->getUser();
         $microPost = new MicroPost();
         $microPost->setUser($user);
 

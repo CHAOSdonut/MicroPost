@@ -1,0 +1,22 @@
+App\Entity\User:
+  user_{1..1}:
+    username: 'admin'
+    password: 'password'
+    email: <email()>
+    fullname: 'admin admin'
+    roles: ['ROLE_ADMIN']
+    confirmation_token: NULL
+    enabled: 1
+    preferences: '@user_preferences_<current()>'
+
+  user_{2..10}:
+    username: <username()>
+    password: <password()>
+    email: <email()>
+    fullname: <name()>
+    roles: ['ROLE_USER']
+    confirmation_token: NULL
+    enabled: 1
+    preferences: '@user_preferences_<current()>'
+    following: ['@user_1']
+

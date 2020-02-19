@@ -42,4 +42,5 @@ class UserPreferences
         $this->locale = $locale;
     }
 
+
 }

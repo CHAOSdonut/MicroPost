@@ -3,6 +3,7 @@
 namespace App\Entity;
 
 use Doctrine\Common\Collections\ArrayCollection;
+use Doctrine\Common\Collections\Collection;
 use Doctrine\ORM\Mapping as ORM;
 use Doctrine\ORM\PersistentCollection;
 use Symfony\Bridge\Doctrine\Validator\Constraints\UniqueEntity;
@@ -243,17 +244,17 @@ class User implements UserInterface, \Serializable
     }
 
     /**
-     * @return PersistentCollection
+     * @return ArrayCollection
      */
-    public function getFollowers(): PersistentCollection
+    public function getFollowers(): Collection
     {
         return $this->followers;
     }
 
     /**
-     * @return PersistentCollection
+     * @return ArrayCollection
      */
-    public function getFollowing(): PersistentCollection
+    public function getFollowing(): Collection
     {
         return $this->following;
     }
@@ -273,6 +274,16 @@ class User implements UserInterface, \Serializable
     public function getPostsLiked()
     {
         return $this->postsLiked;
+    }
+
+    public function addPostsLiked(MicroPost $postliked)
+    {
+        $this->postsLiked->add($postliked);
+    }
+
+    public function removePostLiked(MicroPost $postliked)
+    {
+        $this->postsLiked->remove($postliked);
     }
 
     /**
@@ -321,6 +332,42 @@ class User implements UserInterface, \Serializable
     public function setPreferences($preferences): void
     {
         $this->preferences = $preferences;
+    }
+
+//    /**
+//     * @param ArrayCollection $followers
+//     */
+//    public function setFollowers(ArrayCollection $followers): void
+//    {
+//        $this->followers = $followers;
+//    }
+
+    public function addFollower(User $follower)
+    {
+        $this->followers->add($follower);
+    }
+
+    public function removeFollower(User $follower)
+    {
+        $this->followers->remove($follower);
+    }
+
+//    /**
+//     * @param ArrayCollection $following
+//     */
+//    public function setFollowing(ArrayCollection $following): void
+//    {
+//        $this->following = $following;
+//    }
+
+    public function addFollowing(User $following)
+    {
+        $this->following->add($following);
+    }
+
+    public function removeFollowing(User $following)
+    {
+        $this->following->remove($following);
     }
 
 

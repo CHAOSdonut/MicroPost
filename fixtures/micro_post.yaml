@@ -1,0 +1,6 @@
+App\Entity\MicroPost:
+  micro_post_{1..50}:
+    text: <realText(200)>
+    time: <dateTimeBetween('-3 months', 'now')>
+    user: '@user_<numberBetween(1,10)>'
+    likedBy: ['@user_<numberBetween(1,10)>']
