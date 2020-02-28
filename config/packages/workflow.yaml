@@ -1,0 +1,28 @@
+framework:
+    workflows:
+        blog_publishing:
+            type: 'workflow' # or 'state_machine'
+            audit_trail:
+                enabled: true
+            marking_store:
+                type: 'method'
+                property: 'state'
+            supports:
+                - App\Entity\MicroPost
+            initial_marking: draft
+            places:
+                - draft
+                - for-review
+                - rejected
+                - published
+            transitions:
+                for_review:
+                    from: draft
+                    to: for-review
+                reject:
+                    from: for-review
+                    to:   rejected
+                publish:
+                    from: for-review
+                    to:   published
+

@@ -60,6 +60,12 @@ services:
         arguments:
             - ['%kernel.default_locale%']
 
+#    App\Controller\ExelController:
+#        public: true
+#        bind:
+#            # for any $spreadsheetFactory argument, pass this specific service
+#            $spreadsheetFactory: '@phpoffice.spreadsheet'
+
 
 
     # add more service definitions when explicit configuration is needed

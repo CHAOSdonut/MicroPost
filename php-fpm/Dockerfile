@@ -16,6 +16,7 @@ RUN apk add --update --no-cache \
     php7-intl \
     php7-mcrypt \
     php7-fileinfo\
+    php7-xmlreader \
     php7-mbstring \
     php7-opcache \
     php7-openssl \

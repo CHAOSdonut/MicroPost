@@ -43,6 +43,11 @@ class MicroPost
      */
     private $likedBy;
 
+    /**
+     * @ORM\Column(type="array", length=280, nullable=true)
+     */
+    private $state;
+
     public function __construct()
     {
         $this->likedBy = new ArrayCollection();
@@ -88,8 +93,9 @@ class MicroPost
     /**
      * @ORM\PrePersist()
      */
-    public function setTimeOnPersist(): Void {
-        if ($this->time === null) {
+    public function setTimeOnPersist(): void
+    {
+        if (null === $this->time) {
             $this->time = new \DateTime();
         }
     }
@@ -110,7 +116,6 @@ class MicroPost
         $this->user = $user;
     }
 
-
     public function getLikedBy()
     {
         return $this->likedBy;
@@ -118,7 +123,7 @@ class MicroPost
 
     public function like(User $user)
     {
-        if ($this->likedBy->contains($user)){
+        if ($this->likedBy->contains($user)) {
             return;
         }
 
@@ -133,5 +138,21 @@ class MicroPost
     public function removeLikedby(User $user)
     {
         $this->likedBy->remove($user);
+    }
+
+    /**
+     * @return mixed
+     */
+    public function getState()
+    {
+        return $this->state;
+    }
+
+    /**
+     * @param mixed $marking
+     */
+    public function setState($state): void
+    {
+        $this->state = $state;
     }
 }

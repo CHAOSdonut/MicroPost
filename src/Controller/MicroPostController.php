@@ -8,17 +8,24 @@ use App\Form\MicroPostType;
 use App\Repository\MicroPostRepository;
 use App\Repository\UserRepository;
 use Doctrine\ORM\EntityManagerInterface;
+use Exception;
 use Sensio\Bundle\FrameworkExtraBundle\Configuration\Security;
 use Symfony\Component\Form\FormFactoryInterface;
 use Symfony\Component\HttpFoundation\RedirectResponse;
 use Symfony\Component\HttpFoundation\Request;
+use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\HttpFoundation\Session\Flash\FlashBagInterface;
 use Symfony\Component\Routing\Annotation\Route;
-use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Routing\RouterInterface;
 use Symfony\Component\Security\Core\Authentication\Token\Storage\TokenStorageInterface;
 use Symfony\Component\Security\Core\Authorization\AuthorizationCheckerInterface;
 use Symfony\Component\Security\Core\User\UserInterface;
+use Symfony\Component\Workflow\Exception\LogicException;
+use Symfony\Component\Workflow\Registry;
+use Twig\Environment;
+use Twig\Error\LoaderError;
+use Twig\Error\RuntimeError;
+use Twig\Error\SyntaxError;
 
 /**
  * @Route("/micro-post")
@@ -26,7 +33,7 @@ use Symfony\Component\Security\Core\User\UserInterface;
 class MicroPostController
 {
     /**
-     * @var \Twig\Environment
+     * @var Environment
      */
     private $twig;
 
@@ -46,18 +53,34 @@ class MicroPostController
     private $entityManager;
 
     /**
-     * @var AuthorizationCheckerInterface $authorizationChecker
+     * @var AuthorizationCheckerInterface
      */
     private $authorizationChecker;
 
+    /**
+     * @var Registry
+     */
+    private $workflowRegistry;
+
+    /**
+     * @var FlashBagInterface
+     */
+    private $flashBag;
+
+    /**
+     * @var RouterInterface
+     */
+    private $router;
+
     public function __construct(
-        \Twig\Environment $twig,
+        Environment $twig,
         MicroPostRepository $microPostRepository,
         FormFactoryInterface $formFactory,
         EntityManagerInterface $entityManager,
         RouterInterface $router,
         FlashBagInterface $flashBag,
-        AuthorizationCheckerInterface $authorizationChecker
+        AuthorizationCheckerInterface $authorizationChecker,
+        Registry $workflowRegistry
     ) {
         $this->twig = $twig;
         $this->microPostRepository = $microPostRepository;
@@ -66,22 +89,29 @@ class MicroPostController
         $this->router = $router;
         $this->flashBag = $flashBag;
         $this->authorizationChecker = $authorizationChecker;
+        $this->workflowRegistry = $workflowRegistry;
     }
 
     /**
      * @Route("/", name="micro_post_index")
+     *
+     * @return Response
+     *
+     * @throws LoaderError
+     * @throws RuntimeError
+     * @throws SyntaxError
      */
     public function index(TokenStorageInterface $tokenStorage, UserRepository $userRepository)
     {
         $currentUser = $tokenStorage->getToken()->getUser();
         $usersToFollow = [];
 
-        if($currentUser instanceof User){
+        if ($currentUser instanceof User) {
             $posts = $this->microPostRepository->findAllByUser(
                 $currentUser->getFollowing()
             );
 
-            $usersToFollow = count($posts) === 0 ? $userRepository->findAllWithMoreThan5PostsExceptUser($currentUser) : [];
+            $usersToFollow = 0 === count($posts) ? $userRepository->findAllWithMoreThan5PostsExceptUser($currentUser) : [];
         } else {
             $posts = $this->microPostRepository->findBy(
                 [],
@@ -91,7 +121,7 @@ class MicroPostController
 
         $html = $this->twig->render('micro-post/index.html.twig', [
             'posts' => $posts,
-            'usersToFollow' => $usersToFollow
+            'usersToFollow' => $usersToFollow,
         ]);
 
         return new Response($html);
@@ -100,18 +130,24 @@ class MicroPostController
     /**
      * @Route("/edit/{id}", name="micro_post_edit")
      * @Security("is_granted('edit', microPost)", message="Access denied")
+     *
+     * @return RedirectResponse|Response
+     *
+     * @throws LoaderError
+     * @throws RuntimeError
+     * @throws SyntaxError
+     * @throws Exception
      */
-    public function edit(MicroPost $microPost,Request $request)
+    public function edit(MicroPost $microPost, Request $request)
     {
-        if(!$this->authorizationChecker->isGranted('edit', $microPost)){
-            throw new \Exception('bruh');
+        if (!$this->authorizationChecker->isGranted('edit', $microPost)) {
+            throw new Exception('bruh');
         }
         $form = $this->formFactory->create(MicroPostType::class, $microPost);
 
         $form->handleRequest($request);
 
-        if ($form->isSubmitted() && $form->isValid())
-        {
+        if ($form->isSubmitted() && $form->isValid()) {
             $this->entityManager->persist($microPost);
             $this->entityManager->flush();
 
@@ -130,6 +166,8 @@ class MicroPostController
     /**
      * @Route("/delete/{id}", name="micro_post_delete")
      * @Security("is_granted('delete', microPost)", message="Access denied")
+     *
+     * @return RedirectResponse
      */
     public function delete(MicroPost $microPost, Request $request, UserInterface $user)
     {
@@ -146,6 +184,12 @@ class MicroPostController
     /**
      * @Route("/add", name="micro_post_add")
      * @Security("is_granted('ROLE_USER')")
+     *
+     * @return RedirectResponse|Response
+     *
+     * @throws LoaderError
+     * @throws RuntimeError
+     * @throws SyntaxError
      */
     public function add(Request $request, TokenStorageInterface $tokenStorage)
     {
@@ -153,12 +197,20 @@ class MicroPostController
         $microPost = new MicroPost();
         $microPost->setUser($user);
 
+        $workflow = $this->workflowRegistry->get($microPost, 'blog_publishing');
+
         $form = $this->formFactory->create(MicroPostType::class, $microPost);
 
         $form->handleRequest($request);
 
-        if ($form->isSubmitted() && $form->isValid())
-        {
+        if ($form->isSubmitted() && $form->isValid()) {
+            // Update the currentState on the post
+            try {
+                $workflow->apply($microPost, 'for_review');
+            } catch (LogicException $exception) {
+                throw new \LogicException($exception);
+            }
+
             $this->entityManager->persist($microPost);
             $this->entityManager->flush();
 
@@ -176,6 +228,12 @@ class MicroPostController
 
     /**
      * @Route("/user/{username}", name="micro_post_user")
+     *
+     * @return Response
+     *
+     * @throws LoaderError
+     * @throws RuntimeError
+     * @throws SyntaxError
      */
     public function userPosts(User $userWithPost)
     {
@@ -189,7 +247,83 @@ class MicroPostController
     }
 
     /**
+     * @Route("/check", name="micro_post_check")
+     *
+     * @param MicroPostRepository $microPostRepository
+     * @return Response
+     *
+     * @throws LoaderError
+     * @throws RuntimeError
+     * @throws SyntaxError
+     */
+    public function check(MicroPostRepository $microPostRepository)
+    {
+        $html = $this->twig->render('micro-post/check.html.twig', [
+            'posts' => $this->microPostRepository->findBy([], ['time' => 'DESC']),
+        ]);
+
+        return new Response($html);
+    }
+
+    /**
+     * @Route("/publish/{id}", name="micro_post_publish")
+     *
+     * @param Request $request
+     * @param MicroPost $microPost
+     * @return RedirectResponse
+     */
+    public function publish(Request $request, MicroPost $microPost)
+    {
+        $workflow = $this->workflowRegistry->get($microPost);
+
+        // Update the currentState on the post
+        try {
+            $workflow->apply($microPost, 'publish');
+        } catch (LogicException $exception) {
+            // ...
+        }
+
+        $this->entityManager->flush();
+
+        return new RedirectResponse(
+            $this->router->generate('micro_post_check')
+        );
+    }
+
+    /**
+     * @Route("/reject/{id}", name="micro_post_reject")
+     *
+     * @param Request $request
+     * @param MicroPost $microPost
+     * @return RedirectResponse
+     */
+    public function reject(Request $request, MicroPost $microPost)
+    {
+        $workflow = $this->workflowRegistry->get($microPost);
+
+        // Update the currentState on the post
+        try {
+            $workflow->apply($microPost, 'reject');
+        } catch (LogicException $exception) {
+            // ...
+        }
+
+        $this->entityManager->flush();
+
+        return new RedirectResponse(
+            $this->router->generate('micro_post_check')
+        );
+    }
+
+    /**
      * @Route("/{id}", name="micro_post_post")
+     *
+     * @param MicroPost $post
+     * @return Response
+     *
+     * @throws LoaderError
+     * @throws RuntimeError
+     * @throws SyntaxError
      */
     public function post(MicroPost $post)
     {
@@ -197,7 +331,7 @@ class MicroPostController
             $this->twig->render(
                 'micro-post/post.html.twig',
                 [
-                    'post' => $post
+                    'post' => $post,
                 ]
             )
         );

@@ -19,6 +19,7 @@
         <h6 class="border-bottom border-gray pb-2 mb-0">Recent updates</h6>
 
         {% for post in posts %}
+            {% if workflow_marked_places(post)[0] == "published" %}
             {{ include('micro-post/raw-post.html.twig', { 'post': post }) }}
 
             <small class="d-block text-right mt-3">
@@ -29,6 +30,7 @@
                     <a href="{{ path('micro_post_delete', {'id': post.id}) }}">Delete</a>
                 {% endif %}
             </small>
+            {% endif %}
         {% endfor %}
     {% endif %}
 {% endblock %}

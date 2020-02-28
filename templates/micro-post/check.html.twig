@@ -1,0 +1,32 @@
+{% extends 'base.html.twig' %}
+
+{% block body %}
+    <style>
+        .wl{
+            color: white;
+        }
+    </style>
+    {% for message in app.flashes('notice') %}
+        <div class="alert alert-success">
+            {{ message }}
+        </div>
+    {% endfor %}
+    <h3>Review Posts:</h3>
+
+        {% for post in posts %}
+            {% if workflow_marked_places(post)[0] != "published" %}
+                status: {{ workflow_marked_places(post)[0] }}
+            {{ include('micro-post/raw-post.html.twig', { 'post': post }) }}
+
+            <small class="d-block text-right mt-3">
+                {% if workflow_can(post, 'publish') %}
+                    <button type="button" class="btn btn-primary"><a href="{{ path('micro_post_publish', {'id': post.id}) }}" class="wl">Publish</a></button>
+                {% endif %}
+
+                {% if workflow_can(post, 'reject') %}
+                    <button type="button" class="btn btn-secondary"><a href="{{ path('micro_post_reject', {'id': post.id}) }}" class="wl">Reject</a></button>
+                {% endif %}
+            </small>
+            {% endif %}
+        {% endfor %}
+{% endblock %}
