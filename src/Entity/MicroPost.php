@@ -149,7 +149,7 @@ class MicroPost
     }
 
     /**
-     * @param mixed $marking
+     * @param $state
      */
     public function setState($state): void
     {

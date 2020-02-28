@@ -95,6 +95,8 @@ class MicroPostController
     /**
      * @Route("/", name="micro_post_index")
      *
+     * @param TokenStorageInterface $tokenStorage
+     * @param UserRepository $userRepository
      * @return Response
      *
      * @throws LoaderError
